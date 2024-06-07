@@ -33,11 +33,11 @@ async function run() {
 
         const secret = process.env.ACCESS_TOKEN_SECRET;
         // console.log(secret);
-        const userCollection = client.db("TitansDb").collection("meals");
-        // const menuCollection = client.db("BistroDb").collection("menu");
-        // const reviewsCollection = client.db("BistroDb").collection("reviews");
-        // const cartsCollection = client.db("BistroDb").collection("carts");
-        // const paymentCollection = client.db("BistroDb").collection("payments");
+        const userCollection = client.db("TitansDb").collection("users");
+        const mealsCollection = client.db("TitansDb").collection("meals");
+        // const reviewsCollection = client.db("TitansDb").collection("reviews");
+        // const cartsCollection = client.db("TitansDb").collection("carts");
+        // const paymentCollection = client.db("TitansDb").collection("payments");
 
         //middlewares
         const verifyToken = (req, res, next) => {
@@ -115,26 +115,35 @@ async function run() {
             res.send({ paymentResult, deleteResult });
         })
 
-        //menu api
-        app.get('/menu', async (req, res) => {
-            const result = await menuCollection.find().toArray();
+        //meals api
+        app.get('/meals', async (req, res) => {
+            const { name, order } = req.query;
+            // console.log('searched from query', name);
+            const query = {
+                status: { $eq: 'available' }
+            }
+            if (name && typeof name === 'string') {
+                query.name = { $regex: name, $options: "i" };
+            }
+            const cursor = mealsCollection.find(query);
+            const result = await cursor.toArray();
             res.send(result);
         })
 
-        app.post('/menu', verifyToken, verifyAdmin, async (req, res) => {
+        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {
             const item = req.body;
-            const result = await menuCollection.insertOne(item);
+            const result = await mealsCollection.insertOne(item);
             res.send(result);
         })
 
-        app.get('/menu/:id', async (req, res) => {
+        app.get('/meals/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await menuCollection.findOne(query);
+            const result = await mealsCollection.findOne(query);
             res.send(result);
         })
 
-        app.patch('/menu/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const item = req.body;
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
@@ -146,20 +155,20 @@ async function run() {
                     image: item.image
                 }
             }
-            const result = await menuCollection.updateOne(filter, updateDoc);
+            const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
-        app.delete('/menu/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.delete('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await menuCollection.deleteOne(query);
+            const result = await mealsCollection.deleteOne(query);
             res.send(result);
         })
 
-        app.get('/reviews', async (req, res) => {
-            const result = await reviewsCollection.find().toArray();
-            res.send(result);
-        })
+        // app.get('/reviews', async (req, res) => {
+        //     const result = await reviewsCollection.find().toArray();
+        //     res.send(result);
+        // })
 
         //user apis
         app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
@@ -224,9 +233,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('restaurant is running')
+    res.send('Titan is running')
 })
 
 app.listen(port, () => {
-    console.log('bistro is running on port', port);
+    console.log('Titan is taking a nap on port', port);
 })
