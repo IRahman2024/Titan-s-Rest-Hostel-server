@@ -117,16 +117,25 @@ async function run() {
 
         //meals api
         app.get('/meals', async (req, res) => {
-            const { name, order } = req.query;
-            // console.log('searched from query', name);
+            const { name, category, range } = req.query;
+            const price = parseInt(range);
+            console.log('searched from query', category);
             const query = {
-                status: { $eq: 'available' }
+                status: { $eq: 'available' },
             }
             if (name && typeof name === 'string') {
                 query.name = { $regex: name, $options: "i" };
             }
+            if(category && typeof category === 'string'){
+                query.category = category;
+            }
+            if(range){
+                query.price = {$gte: price};
+            }
+            // console.log(typeof(price));
             const cursor = mealsCollection.find(query);
             const result = await cursor.toArray();
+            console.log(result);
             res.send(result);
         })
 
