@@ -117,9 +117,10 @@ async function run() {
 
         //meals api
         app.get('/meals', async (req, res) => {
+            // console.log(req.headers);
             const { name, category, range } = req.query;
             const price = parseInt(range);
-            console.log('searched from query', category);
+            // console.log('searched from query', category);
             const query = {
                 status: { $eq: 'available' },
             }
@@ -135,11 +136,12 @@ async function run() {
             // console.log(typeof(price));
             const cursor = mealsCollection.find(query);
             const result = await cursor.toArray();
-            console.log(result);
+            // console.log(result);
             res.send(result);
         })
 
-        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {
+        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {  
+            console.log(req);
             const item = req.body;
             const result = await mealsCollection.insertOne(item);
             res.send(result);
@@ -184,6 +186,34 @@ async function run() {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
+
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            res.send(user);
+        })
+
+        app.put('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const about = req.body;
+
+            const filter = { email: email };
+            const options = { upsert: true };
+
+            // console.log(about);
+
+            const updatedDoc = {
+                $set: {
+                    about: about
+                }
+            };
+
+            const user = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(user);
+        })
+        
         //checks if it's admin or not
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
