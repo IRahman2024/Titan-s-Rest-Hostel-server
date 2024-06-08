@@ -37,7 +37,7 @@ async function run() {
         const mealsCollection = client.db("TitansDb").collection("meals");
         // const reviewsCollection = client.db("TitansDb").collection("reviews");
         // const cartsCollection = client.db("TitansDb").collection("carts");
-        // const paymentCollection = client.db("TitansDb").collection("payments");
+        const paymentCollection = client.db("TitansDb").collection("payments");
 
         //middlewares
         const verifyToken = (req, res, next) => {
@@ -76,8 +76,8 @@ async function run() {
         //payment  api
         app.get('/payments/:email', verifyToken, async (req, res) => {
             const query = { email: req.params.email };
-            if(req.params.email !== req.decoded.email){
-                return res.status(403).send({message: 'forbidden access'})
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
             }
             const result = await paymentCollection.find(query).toArray();
             res.send(result);
@@ -104,15 +104,9 @@ async function run() {
             const paymentResult = await paymentCollection.insertOne(payment);
 
             //carefully delete each item from cart of that specific user
-            const query = {
-                _id: {
-                    $in: payment.cartIds.map(id => new ObjectId(id))
-                }
-            };
 
-            const deleteResult = await cartsCollection.deleteMany(query);
             console.log('payment info', payment);
-            res.send({ paymentResult, deleteResult });
+            res.send({ paymentResult });
         })
 
         //meals api
@@ -127,11 +121,11 @@ async function run() {
             if (name && typeof name === 'string') {
                 query.name = { $regex: name, $options: "i" };
             }
-            if(category && typeof category === 'string'){
+            if (category && typeof category === 'string') {
                 query.category = category;
             }
-            if(range){
-                query.price = {$gte: price};
+            if (range) {
+                query.price = { $gte: price };
             }
             // console.log(typeof(price));
             const cursor = mealsCollection.find(query);
@@ -140,7 +134,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {  
+        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {
             console.log(req);
             const item = req.body;
             const result = await mealsCollection.insertOne(item);
@@ -195,14 +189,23 @@ async function run() {
             res.send(user);
         })
 
-        app.put('/users/:email', async (req, res) => {
+        app.put('/users/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const about = req.body;
 
             const filter = { email: email };
             const options = { upsert: true };
 
-            // console.log(about);
+            console.log(about);
+
+            if (about.package) {
+                const updatedDoc = {
+                    $set: {
+                        badge: about.package
+                    }
+                };
+                const user = await userCollection.updateOne(filter, updatedDoc, options);
+            }
 
             const updatedDoc = {
                 $set: {
@@ -213,7 +216,7 @@ async function run() {
             const user = await userCollection.updateOne(filter, updatedDoc, options);
             res.send(user);
         })
-        
+
         //checks if it's admin or not
         app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
@@ -244,6 +247,7 @@ async function run() {
             }
             const result = await userCollection.updateOne(filter, updatedDoc)
         })
+
         app.post('/users', async (req, res) => {
             const user = req.body;
             const query = { email: user.email };
@@ -254,6 +258,7 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         })
+
         app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
