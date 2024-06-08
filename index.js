@@ -105,7 +105,7 @@ async function run() {
 
             //carefully delete each item from cart of that specific user
 
-            console.log('payment info', payment);
+            // console.log('payment info', payment);
             res.send({ paymentResult });
         })
 
@@ -163,6 +163,7 @@ async function run() {
             const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+
         app.delete('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
@@ -205,16 +206,20 @@ async function run() {
                     }
                 };
                 const user = await userCollection.updateOne(filter, updatedDoc, options);
+                res.send(user);
             }
 
-            const updatedDoc = {
-                $set: {
-                    about: about
-                }
-            };
+            else {
+                const updatedDoc = {
+                    $set: {
+                        about: about
+                    }
+                };
+                const user = await userCollection.updateOne(filter, updatedDoc, options);
+                res.send(user);
+            }
 
-            const user = await userCollection.updateOne(filter, updatedDoc, options);
-            res.send(user);
+
         })
 
         //checks if it's admin or not
