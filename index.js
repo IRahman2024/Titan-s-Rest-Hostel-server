@@ -48,6 +48,7 @@ async function run() {
         const userCollection = client.db("TitansDb").collection("users");
         const mealsCollection = client.db("TitansDb").collection("meals");
         const reviewsCollection = client.db("TitansDb").collection("reviews");
+        const requestCollection = client.db("TitansDb").collection("requests");
         // const cartsCollection = client.db("TitansDb").collection("carts");
         const paymentCollection = client.db("TitansDb").collection("payments");
 
@@ -180,6 +181,27 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await mealsCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        //meal request api
+        app.post('/request', verifyToken, async (req, res) => {
+            const request = req.body;
+            console.log(request);
+            const result = await requestCollection.insertOne(request);
+            res.send(result);
+            })
+            
+        //todo: requested chaged to served
+        app.patch('/request/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: 'served'
+                }
+            }
+            const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
 
