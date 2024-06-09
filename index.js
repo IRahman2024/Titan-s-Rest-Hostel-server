@@ -9,7 +9,14 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 // console.log(process.env.STRIPE_KEY);
 //middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        "https://titan-s-rest.web.app",
+        "https://titan-s-rest.firebaseapp.com",
+        "http://localhost:5173",
+        "http://localhost:5174"
+    ]
+}));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8sux4by.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -25,11 +32,16 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+
+
+        // // Connect the client to the server	(optional starting in v4.7)
+        // await client.connect();
+        // // Send a ping to confirm a successful connection
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+
 
         const secret = process.env.ACCESS_TOKEN_SECRET;
         // console.log(secret);
