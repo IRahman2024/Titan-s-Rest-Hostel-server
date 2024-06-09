@@ -35,11 +35,11 @@ async function run() {
 
 
 
-        // // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
-        // // Send a ping to confirm a successful connection
-        // await client.db("admin").command({ ping: 1 });
-        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // Connect the client to the server	(optional starting in v4.7)
+        await client.connect();
+        // Send a ping to confirm a successful connection
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
 
 
@@ -47,7 +47,7 @@ async function run() {
         // console.log(secret);
         const userCollection = client.db("TitansDb").collection("users");
         const mealsCollection = client.db("TitansDb").collection("meals");
-        // const reviewsCollection = client.db("TitansDb").collection("reviews");
+        const reviewsCollection = client.db("TitansDb").collection("reviews");
         // const cartsCollection = client.db("TitansDb").collection("carts");
         const paymentCollection = client.db("TitansDb").collection("payments");
 
@@ -183,10 +183,25 @@ async function run() {
             res.send(result);
         })
 
-        // app.get('/reviews', async (req, res) => {
-        //     const result = await reviewsCollection.find().toArray();
-        //     res.send(result);
-        // })
+        //review api
+        app.get('/reviews', async (req, res) => {
+            const result = await reviewsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { mealId: id };
+            const result = await mealsCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.post('/reviews', verifyToken, async (req, res) => {
+            const review = req.body;
+            // console.log(review);
+            const result = await reviewsCollection.insertOne(review);
+            res.send(result);
+        })
 
         //user apis
         app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
