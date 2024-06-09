@@ -213,8 +213,8 @@ async function run() {
 
         app.get('/reviews/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { mealId: id };
-            const result = await mealsCollection.findOne(query);
+            const query = { reviewId: id };
+            const result = await reviewsCollection.find(query).toArray();
             res.send(result);
         })
 
