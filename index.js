@@ -148,7 +148,7 @@ async function run() {
         })
 
         app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {
-            console.log(req);
+            // console.log(req);
             const item = req.body;
             const result = await mealsCollection.insertOne(item);
             res.send(result);
@@ -161,10 +161,48 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
+        app.patch('/mealsReview/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $inc: { reviewCount: 1 }
+            }
+            //6664394ade3dd4139f635070
+            const result = await mealsCollection.updateOne(filter, updateDoc, options);
+
+            const filter2 = { requestId: id };
+            const updateDoc2 = {
+                $inc: { review: 1 }
+            }
+            const result2 = await requestCollection.updateMany(filter2, updateDoc2, options);
+
+            res.send(result);
+        })
+
+        app.patch('/likeCount/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = {
+                $inc: { likeCount: 1 }
+            }
+            const result = await mealsCollection.updateOne(filter, updateDoc, options);
+
+            const filter2 = { requestId: id };
+            const updateDoc2 = {
+                $inc: { like: 1 }
+            }
+            const result2 = await requestCollection.updateMany(filter2, updateDoc2, options);
+
+            res.send(result);
+        })
+
+        app.patch('/meals/:id', async (req, res) => {
             const item = req.body;
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
+
             const updateDoc = {
                 $set: {
                     name: item.name,
@@ -173,6 +211,25 @@ async function run() {
                     image: item.image
                 }
             }
+
+            const result = await mealsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+
+        //likeArray
+        app.patch('/meals-likeArray/:id', async (req, res) => {
+            const array = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+
+            console.log(array);
+
+            const updateDoc = {
+                $set: {
+                    likeArray: array
+                }
+            }
+
             const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
@@ -185,13 +242,25 @@ async function run() {
         })
 
         //meal request api
+        app.get('/request', async (req, res) => {
+            const result = await requestCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/request/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await requestCollection.find(query).toArray();
+            res.send(result);
+        })
+
         app.post('/request', verifyToken, async (req, res) => {
             const request = req.body;
-            console.log(request);
+            // console.log(request);
             const result = await requestCollection.insertOne(request);
             res.send(result);
-            })
-            
+        })
+
         //todo: requested chaged to served
         app.patch('/request/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
@@ -204,17 +273,46 @@ async function run() {
             const result = await mealsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+        app.delete('/request/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await requestCollection.deleteOne(query);
+            res.send(result);
+        })
 
         //review api
         app.get('/reviews', async (req, res) => {
             const result = await reviewsCollection.find().toArray();
             res.send(result);
         })
-
+        //reviews based on food id
         app.get('/reviews/:id', async (req, res) => {
             const id = req.params.id;
+            // console.log(id);
             const query = { reviewId: id };
             const result = await reviewsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //review based on user email
+        app.get('/reviews-email/:email', async (req, res) => {
+            const email = req.params.email;
+            // console.log(email);
+            const query = { email: email };
+            const result = await reviewsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //review based on user email and title
+        app.get('/reviews-email-title/:email', async (req, res) => {
+            const email = req.params.email;
+            const { title } = req.query;
+            // console.log(email);
+            const query = { 
+                email: email,
+                title: title
+            };
+            const result = await reviewsCollection.findOne(query);
             res.send(result);
         })
 
@@ -222,6 +320,48 @@ async function run() {
             const review = req.body;
             // console.log(review);
             const result = await reviewsCollection.insertOne(review);
+            res.send(result);
+        })
+
+        //edit email review
+        app.patch('/review/:id', async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+
+            console.log(item.review);
+            const updateDoc = {
+                $set: {
+                    review: item.review,
+                }
+            }
+
+            const result = await reviewsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+        //update like all that have user id
+        //todo: email specific korte hbe
+        app.patch('/review-like/:id', verifyToken, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { reviewId: id };
+
+            console.log(item.review);
+            const updateDoc = {
+                $set: {
+                    like: true,
+                }
+            }
+
+            const result = await reviewsCollection.updateMany(filter, updateDoc);
+            res.send(result);
+        })
+
+        //delete review
+        app.delete('/review/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await reviewsCollection.deleteOne(query);
             res.send(result);
         })
 
