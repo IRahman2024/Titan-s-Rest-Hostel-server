@@ -122,7 +122,35 @@ async function run() {
             res.send({ paymentResult });
         })
 
+
+
         //meals api
+        app.get('/mealsAdmin', async (req, res) => {
+            const { likeSort, reviewSort } = req.query;
+
+            // console.log('likeSort: ', reviewSort);
+
+            if (likeSort) {
+                // console.log('likeSort', reviewSort);
+                const result = await mealsCollection.find().sort({ 'likeCount': likeSort }).toArray();
+                // console.log(result);
+                res.send(result);
+            }
+
+            if (reviewSort) {
+                // console.log('reviewSort', reviewSort);
+                const result = await mealsCollection.find().sort({ 'reviewCount': reviewSort }).toArray();
+                // console.log(result);
+                res.send(result);
+            }
+
+            else {
+                // console.log(likeSort, reviewSort);
+                const result = await mealsCollection.find().toArray();
+                res.send(result);
+            }
+        })
+
         app.get('/meals', async (req, res) => {
             // console.log(req.headers);
             const { name, category, range } = req.query;
@@ -146,8 +174,8 @@ async function run() {
             // console.log(result);
             res.send(result);
         })
-
-        app.post('/meals', verifyToken, verifyAdmin, async (req, res) => {
+        //, verifyAdmin
+        app.post('/meals', verifyToken, async (req, res) => {
             // console.log(req);
             const item = req.body;
             const result = await mealsCollection.insertOne(item);
@@ -198,17 +226,21 @@ async function run() {
             res.send(result);
         })
 
+        //meal update api
         app.patch('/meals/:id', async (req, res) => {
             const item = req.body;
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
+
+            // console.log(item);
 
             const updateDoc = {
                 $set: {
                     name: item.name,
                     category: item.category,
                     price: item.price,
-                    image: item.image
+                    image: item.image,
+                    rating: item.rating,
                 }
             }
 
@@ -234,7 +266,8 @@ async function run() {
             res.send(result);
         })
 
-        app.delete('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
+        // verifyToken, verifyAdmin,
+        app.delete('/meals/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await mealsCollection.deleteOne(query);
@@ -280,11 +313,15 @@ async function run() {
             res.send(result);
         })
 
+
+
+
         //review api
         app.get('/reviews', async (req, res) => {
             const result = await reviewsCollection.find().toArray();
             res.send(result);
         })
+
         //reviews based on food id
         app.get('/reviews/:id', async (req, res) => {
             const id = req.params.id;
@@ -308,7 +345,7 @@ async function run() {
             const email = req.params.email;
             const { title } = req.query;
             // console.log(email);
-            const query = { 
+            const query = {
                 email: email,
                 title: title
             };
@@ -339,6 +376,7 @@ async function run() {
             const result = await reviewsCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
+
         //update like all that have user id
         //todo: email specific korte hbe
         app.patch('/review-like/:id', verifyToken, async (req, res) => {
@@ -365,10 +403,32 @@ async function run() {
             res.send(result);
         })
 
+
+
+
         //user apis
-        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+        //'/users', verifyToken, verifyAdmin
+        app.get('/users', async (req, res) => {
+            let query = req.query;
+            let { email, userName } = query;
+            // console.log(query);
+
+            if (userName && typeof userName === 'string') {
+                // console.log('reached userName');
+                query = { name: { $regex: userName, $options: "i" } };
+                const result = await userCollection.find(query).toArray();
+                return res.send(result);
+            }
+            if (email && typeof email === 'string') {
+                // console.log('reached email');
+                query = { email: { $regex: email, $options: "i" } };
+                const result = await userCollection.find(query).toArray();
+                return res.send(result);
+            }
+
             const result = await userCollection.find().toArray();
             res.send(result);
+
         })
 
         app.get('/users/:email', async (req, res) => {
