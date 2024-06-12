@@ -175,12 +175,39 @@ async function run() {
             res.send(result);
         })
         //, verifyAdmin
-        app.post('/meals', verifyToken, async (req, res) => {
+        app.post('/meals/:email', verifyToken, async (req, res) => {
             // console.log(req);
+            const email = req.params.email;
             const item = req.body;
             const result = await mealsCollection.insertOne(item);
+
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $inc: { foodCount: 1 }
+            }
+            const result2 = await userCollection.updateOne(filter, updateDoc, options);
+
             res.send(result);
         })
+
+        // app.patch('/likeCount/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter = { _id: new ObjectId(id) };
+        //     const options = { upsert: true };
+        //     const updateDoc = {
+        //         $inc: { likeCount: 1 }
+        //     }
+        //     const result = await mealsCollection.updateOne(filter, updateDoc, options);
+
+        //     const filter2 = { requestId: id };
+        //     const updateDoc2 = {
+        //         $inc: { like: 1 }
+        //     }
+        //     const result2 = await requestCollection.updateMany(filter2, updateDoc2, options);
+
+        //     res.send(result);
+        // })
 
         app.get('/meals/:id', async (req, res) => {
             const id = req.params.id;
@@ -490,8 +517,8 @@ async function run() {
             }
             res.send({ admin })
         })
-
-        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+        //verifyToken, verifyAdmin,
+        app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
@@ -500,6 +527,7 @@ async function run() {
                 }
             }
             const result = await userCollection.updateOne(filter, updatedDoc)
+            res.send(result)
         })
 
         app.post('/users', async (req, res) => {
@@ -518,6 +546,15 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await userCollection.deleteOne(query);
             res.send(result);
+        })
+
+        //admin api
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            console.log(email);
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            res.send(user);
         })
 
 
