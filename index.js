@@ -174,6 +174,31 @@ async function run() {
             // console.log(result);
             res.send(result);
         })
+
+        app.get('/upcomingMeals', async (req, res) => {
+
+            const query = {
+                status: { $eq: 'upcoming' },
+            }
+
+            // console.log(typeof(price));
+            const result = await mealsCollection.find(query).sort({ 'likeCount': 1 }).toArray();
+
+            res.send(result);
+        })
+
+        app.patch('/upcomingMeals/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = { $set: {
+                status: 'available'
+            }}
+
+            const result = await mealsCollection.updateOne(filter, updateDoc);
+
+            res.send(result);
+        })
+
         //, verifyAdmin
         app.post('/meals/:email', verifyToken, async (req, res) => {
             // console.log(req);
@@ -216,6 +241,7 @@ async function run() {
             res.send(result);
         })
 
+        //review count increment by 1
         app.patch('/mealsReview/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
@@ -231,6 +257,12 @@ async function run() {
                 $inc: { review: 1 }
             }
             const result2 = await requestCollection.updateMany(filter2, updateDoc2, options);
+
+            // const filter3 = { reviewId: id };
+            // const updateDoc3 = {
+            //     $inc: { reviewCount: 1 }
+            // }
+            // const result3 = await reviewsCollection.updateMany(filter3, updateDoc3, options);
 
             res.send(result);
         })
@@ -303,6 +335,23 @@ async function run() {
 
         //meal request api
         app.get('/request', async (req, res) => {
+            let query = req.query;
+            let { email, userName } = query;
+            // console.log(query);
+
+            if (userName && typeof userName === 'string') {
+                // console.log('reached userName');
+                query = { name: { $regex: userName, $options: "i" } };
+                const result = await requestCollection.find(query).toArray();
+                return res.send(result);
+            }
+            if (email && typeof email === 'string') {
+                // console.log('reached email');
+                query = { email: { $regex: email, $options: "i" } };
+                const result = await requestCollection.find(query).toArray();
+                return res.send(result);
+            }
+
             const result = await requestCollection.find().toArray();
             res.send(result);
         })
@@ -322,7 +371,9 @@ async function run() {
         })
 
         //todo: requested chaged to served
+        //, verifyToken
         app.patch('/request/:id', verifyToken, async (req, res) => {
+            // console.log('reached');
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -330,7 +381,7 @@ async function run() {
                     status: 'served'
                 }
             }
-            const result = await mealsCollection.updateOne(filter, updateDoc);
+            const result = await requestCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
         app.delete('/request/:id', async (req, res) => {
@@ -344,10 +395,38 @@ async function run() {
 
 
         //review api
+        // app.get('/reviews', async (req, res) => {
+        //     const reviews = await reviewsCollection.find().toArray();
+
+        //     const result = reviews.map(async (review) => {
+        //         const meal = await mealsCollection.findOne({ _id: new ObjectId(review.reviewId) })
+
+        //         review.mealInfo = meal;
+        //         return review;
+        //     })
+
+        //     console.log(result);
+        //     res.send(result);
+        // })
+
         app.get('/reviews', async (req, res) => {
-            const result = await reviewsCollection.find().toArray();
-            res.send(result);
-        })
+            try {
+                const reviews = await reviewsCollection.find().toArray();
+
+                const result = await Promise.all(reviews.map(async (review) => {
+                    const meal = await mealsCollection.findOne({ _id: new ObjectId(review.reviewId) });
+                    review.mealInfo = meal;
+                    return review;
+                }));
+
+                // console.log(result);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('An error occurred while fetching reviews');
+            }
+        });
+
 
         //reviews based on food id
         app.get('/reviews/:id', async (req, res) => {
@@ -429,7 +508,6 @@ async function run() {
             const result = await reviewsCollection.deleteOne(query);
             res.send(result);
         })
-
 
 
 
