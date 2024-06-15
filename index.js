@@ -174,6 +174,18 @@ async function run() {
             // console.log(result);
             res.send(result);
         })
+        //meals upcoming only
+        app.get('/mealsUpcoming', async (req, res) => {
+            
+            const query = {
+                status: { $eq: 'upcoming' },
+            }
+            
+            const cursor = mealsCollection.find(query);
+            const result = await cursor.toArray();
+            // console.log(result);
+            res.send(result);
+        })
 
         app.get('/upcomingMeals', async (req, res) => {
 
@@ -190,9 +202,11 @@ async function run() {
         app.patch('/upcomingMeals/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
-            const updateDoc = { $set: {
-                status: 'available'
-            }}
+            const updateDoc = {
+                $set: {
+                    status: 'available'
+                }
+            }
 
             const result = await mealsCollection.updateOne(filter, updateDoc);
 
@@ -439,11 +453,23 @@ async function run() {
 
         //review based on user email
         app.get('/reviews-email/:email', async (req, res) => {
-            const email = req.params.email;
-            // console.log(email);
-            const query = { email: email };
-            const result = await reviewsCollection.find(query).toArray();
-            res.send(result);
+            try {
+                const email = req.params.email;
+                // console.log(email);
+                const query = { email: email };
+                const reviews = await reviewsCollection.find(query).toArray();
+
+                const result = await Promise.all(reviews.map(async (review) => {
+                    const meal = await mealsCollection.findOne({ _id: new ObjectId(review.reviewId) });
+                    review.mealInfo = meal;
+                    return review;
+                }));
+                res.send(result);
+            }
+            catch (error) {
+                console.error(error);
+                res.status(500).send('An error occurred while fetching reviews');
+            }
         })
 
         //review based on user email and title
