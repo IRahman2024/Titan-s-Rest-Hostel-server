@@ -36,10 +36,10 @@ async function run() {
 
 
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.connect();
+        // // Send a ping to confirm a successful connection
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
 
 
@@ -67,6 +67,7 @@ async function run() {
                 next();
             });
         }
+        
         //use verify admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
@@ -199,7 +200,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/upcomingMeals/:id', async (req, res) => {
+        app.patch('/upcomingMeals/:id', verifyAdmin, verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -213,8 +214,7 @@ async function run() {
             res.send(result);
         })
 
-        //, verifyAdmin
-        app.post('/meals/:email', verifyToken, async (req, res) => {
+        app.post('/meals/:email', verifyAdmin, verifyToken, async (req, res) => {
             // console.log(req);
             const email = req.params.email;
             const item = req.body;
@@ -256,7 +256,7 @@ async function run() {
         })
 
         //review count increment by 1
-        app.patch('/mealsReview/:id', async (req, res) => {
+        app.patch('/mealsReview/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const options = { upsert: true };
@@ -281,7 +281,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/likeCount/:id', async (req, res) => {
+        app.patch('/likeCount/:id',verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const options = { upsert: true };
@@ -300,7 +300,7 @@ async function run() {
         })
 
         //meal update api
-        app.patch('/meals/:id', async (req, res) => {
+        app.patch('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const item = req.body;
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
@@ -339,8 +339,8 @@ async function run() {
             res.send(result);
         })
 
-        // verifyToken, verifyAdmin,
-        app.delete('/meals/:id', async (req, res) => {
+        // 
+        app.delete('/meals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await mealsCollection.deleteOne(query);
@@ -348,7 +348,7 @@ async function run() {
         })
 
         //meal request api
-        app.get('/request', async (req, res) => {
+        app.get('/request', verifyToken, async (req, res) => {
             let query = req.query;
             let { email, userName } = query;
             // console.log(query);
@@ -370,7 +370,7 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/request/:email', async (req, res) => {
+        app.get('/request/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const result = await requestCollection.find(query).toArray();
@@ -385,7 +385,6 @@ async function run() {
         })
 
         //todo: requested chaged to served
-        //, verifyToken
         app.patch('/request/:id', verifyToken, async (req, res) => {
             // console.log('reached');
             const id = req.params.id;
@@ -398,7 +397,7 @@ async function run() {
             const result = await requestCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
-        app.delete('/request/:id', async (req, res) => {
+        app.delete('/request/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await requestCollection.deleteOne(query);
@@ -538,8 +537,8 @@ async function run() {
 
 
         //user apis
-        //'/users', verifyToken, verifyAdmin
-        app.get('/users', async (req, res) => {
+        //'/users'
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
             let query = req.query;
             let { email, userName } = query;
             // console.log(query);
@@ -603,7 +602,7 @@ async function run() {
         })
 
         //checks if it's admin or not
-        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+        app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             // console.log('decoded email:', req.decoded.email);
             //checks if requested email and user email matches or not
