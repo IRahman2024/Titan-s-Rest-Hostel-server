@@ -200,7 +200,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/upcomingMeals/:id', verifyAdmin, verifyToken, async (req, res) => {
+        app.patch('/upcomingMeals/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -214,7 +214,7 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/meals/:email', verifyAdmin, verifyToken, async (req, res) => {
+        app.post('/meals/:email', verifyToken, verifyAdmin, async (req, res) => {
             // console.log(req);
             const email = req.params.email;
             const item = req.body;
@@ -370,7 +370,8 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/request/:email', verifyToken, async (req, res) => {
+        //, verifyToken
+        app.get('/request/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const result = await requestCollection.find(query).toArray();
@@ -602,13 +603,14 @@ async function run() {
         })
 
         //checks if it's admin or not
-        app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
+        //verifyToken, verifyAdmin
+        app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
-            // console.log('decoded email:', req.decoded.email);
-            //checks if requested email and user email matches or not
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
+            // // console.log('decoded email:', req.decoded.email);
+            // //checks if requested email and user email matches or not
+            // if (email !== req.decoded.email) {
+            //     return res.status(403).send({ message: 'forbidden access' })
+            // }
 
             const query = { email: email };
             const user = await userCollection.findOne(query);
@@ -620,6 +622,7 @@ async function run() {
             }
             res.send({ admin })
         })
+        
         //verifyToken, verifyAdmin,
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
