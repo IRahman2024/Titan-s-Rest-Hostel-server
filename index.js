@@ -712,8 +712,8 @@ async function run() {
             const item = req.body;
             const id = req.params.id;
 
-            console.log(item);
-            console.log(id);
+            // console.log(item);
+            // console.log(id);
             
             const filter = { _id: new ObjectId(id) };
             const updatedDoc = {
