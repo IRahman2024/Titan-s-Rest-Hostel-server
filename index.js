@@ -51,6 +51,7 @@ async function run() {
         const requestCollection = client.db("TitansDb").collection("requests");
         // const cartsCollection = client.db("TitansDb").collection("carts");
         const paymentCollection = client.db("TitansDb").collection("payments");
+        const complainCollection = client.db("TitansDb").collection("complains");
 
         //middlewares
         const verifyToken = (req, res, next) => {
@@ -67,7 +68,7 @@ async function run() {
                 next();
             });
         }
-        
+
         //use verify admin after verifyToken
         const verifyAdmin = async (req, res, next) => {
             const email = req.decoded.email;
@@ -177,11 +178,11 @@ async function run() {
         })
         //meals upcoming only
         app.get('/mealsUpcoming', async (req, res) => {
-            
+
             const query = {
                 status: { $eq: 'upcoming' },
             }
-            
+
             const cursor = mealsCollection.find(query);
             const result = await cursor.toArray();
             // console.log(result);
@@ -281,7 +282,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/likeCount/:id',verifyToken, async (req, res) => {
+        app.patch('/likeCount/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const options = { upsert: true };
@@ -622,7 +623,7 @@ async function run() {
             }
             res.send({ admin })
         })
-        
+
         //verifyToken, verifyAdmin,
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
@@ -661,6 +662,74 @@ async function run() {
             const query = { email: email };
             const user = await userCollection.findOne(query);
             res.send(user);
+        })
+
+        app.post('/complains', verifyToken, async (req, res) => {
+            // console.log(req);
+            const item = req.body;
+            const result = await complainCollection.insertOne(item);
+
+            res.send(result);
+        })
+
+        //verifyToken
+        app.get('/complains/:email', verifyToken, async (req, res) => {
+            // console.log(req);
+            const email = req.params.email;
+            const query = { email: email };
+            const cursor = complainCollection.find(query);
+            const result = await cursor.toArray();
+
+            res.send(result);
+        })
+
+        //all complains
+        app.get('/complains', verifyToken, verifyAdmin, async (req, res) => {
+            const result = await complainCollection.find().toArray();
+
+            res.send(result);
+        })
+
+        app.patch('/complains/:id', verifyToken, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+
+            // console.log(item.details);
+            // console.log(id);
+            
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    details: item.details
+                }
+            }
+            const result = await complainCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        //change by admin
+        app.patch('/changeStatus/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+
+            console.log(item);
+            console.log(id);
+            
+            const filter = { _id: new ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    status: item.status
+                }
+            }
+            const result = await complainCollection.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
+
+        app.delete('/complains/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await complainCollection.deleteOne(query);
+            res.send(result);
         })
 
 
